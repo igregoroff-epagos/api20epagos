@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>E-Pagos API Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+        background: #ffffff;
+        color: #334155;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    * { box-sizing: border-box; }
+
+    /* Layout Principal */
+    .sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        width: 280px;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        overflow-y: auto;
+        padding: 24px 16px;
+        z-index: 10;
+    }
+
+    .main {
+        margin-left: 280px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Títulos Globales */
+    .api-header {
+        padding: 40px;
+        max-width: 800px;
+    }
+    .api-header h1 { margin-top: 0; font-size: 32px; color: #0f172a; }
+    .api-header p { font-size: 16px; color: #64748b; line-height: 1.6; }
+
+    /* Barra Lateral */
+    .sidebar-title {
+        font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 20px;
+        padding-left: 8px;
+    }
+
+    /* Botón de subida de archivo */
+    .upload-section {
+        margin-bottom: 20px;
+    }
+    .upload-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background: #0f172a;
+        color: #ffffff;
+        text-align: center;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .upload-btn:hover {
+        background: #1e293b;
+    }
+    input[type="file"] {
+        display: none;
+    }
+
+    .search {
+        width: 100%; padding: 10px 12px; border-radius: 6px;
+        border: 1px solid #cbd5e1; margin-bottom: 20px;
+        font-family: inherit; font-size: 14px;
+        outline: none; transition: border 0.2s;
+    }
+    .search:focus { border-color: #3b82f6; }
+    
+    .nav-tag {
+        margin-top: 24px; font-size: 12px; font-weight: 700;
+        color: #94a3b8; text-transform: uppercase; padding-left: 8px;
+        letter-spacing: 0.5px;
+    }
+    .endpoint-link {
+        display: flex; align-items: center;
+        padding: 8px; font-size: 13px; color: #475569;
+        text-decoration: none; border-radius: 6px;
+        margin-top: 4px; transition: background 0.2s;
+    }
+    .endpoint-link:hover { background: #e2e8f0; color: #0f172a; }
+    
+    .link-method {
+        font-size: 10px; font-weight: 700; width: 45px;
+        text-transform: uppercase;
+    }
+    .link-method.get { color: #2563eb; }
+    .link-method.post { color: #059669; }
+    .link-method.put { color: #d97706; }
+    .link-method.delete { color: #dc2626; }
+
+    /* Bloque de Endpoint */
+    .endpoint-block {
+        display: flex;
+        border-top: 1px solid #e2e8f0;
+        min-height: 50vh;
+    }
+
+    .endpoint-info {
+        flex: 1;
+        padding: 40px;
+        max-width: 800px;
+    }
+
+    .endpoint-code {
+        width: 45vw;
+        max-width: 600px;
+        background: #1e293b;
+        color: #f8fafc;
+        padding: 40px;
+        border-left: 1px solid #0f172a;
+    }
+
+    .endpoint-title { font-size: 20px; color: #0f172a; margin-top: 0; margin-bottom: 12px; }
+    .endpoint-desc { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+    
+    .url-bar {
+        display: inline-flex; align-items: center;
+        background: #f1f5f9; padding: 6px 12px; border-radius: 6px;
+        margin-bottom: 30px; border: 1px solid #e2e8f0;
+    }
+    .badge {
+        font-size: 12px; font-weight: 700; padding: 4px 8px;
+        border-radius: 4px; margin-right: 12px; text-transform: uppercase;
+    }
+    .badge.get { background: #dbeafe; color: #1d4ed8; }
+    .badge.post { background: #dcfce7; color: #15803d; }
+    .badge.put { background: #fef3c7; color: #b45309; }
+    .badge.delete { background: #fee2e2; color: #b91c1c; }
+
+    .path { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: #0f172a;}
+
+    /* Tablas de Parámetros */
+    h4 { font-size: 15px; color: #0f172a; margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;}
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+    th { text-align: left; padding: 10px 8px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    
+    .param-name { font-weight: 600; color: #0f172a; display: block; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8b5cf6; }
+    .param-req { font-size: 11px; color: #dc2626; font-weight: 600; text-transform: uppercase; margin-left: 6px; }
+    .param-desc { color: #475569; margin-top: 4px; line-height: 1.5; }
+
+    /* Sección de Código */
+    .code-section-title {
+        font-size: 12px; font-weight: 700; text-transform: uppercase;
+        color: #94a3b8; margin-top: 0; margin-bottom: 12px; letter-spacing: 0.5px;
+    }
+    .code-block-container {
+        background: #0f172a; border-radius: 8px; padding: 16px; margin-bottom: 30px;
+        position: relative;
+    }
+    pre {
+        margin: 0; overflow-x: auto;
+        font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.5;
+    }
+    
+    /* Syntax Highlighting */
+    .string { color: #a5d6ff; }
+    .number { color: #79c0ff; }
+    .boolean { color: #ff7b72; }
+    .null { color: #ff7b72; }
+    .key { color: #7ee787; }
+    .curl-cmd { color: #e2e8f0; white-space: pre-wrap; word-break: break-all; }
+
+    .status-badge {
+        display: inline-block; font-size: 12px; font-weight: 600;
+        padding: 2px 6px; border-radius: 4px; margin-bottom: 10px;
+    }
+    .status-200, .status-201 { background: #064e3b; color: #34d399; }
+    .status-400, .status-401, .status-402, .status-403, .status-404, .status-405, .status-408, .status-409, .status-410, .status-411 { background: #450a0a; color: #f87171; }
+    .status-500 { background: #4a044e; color: #e879f9; }
+
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-title" id="sidebar-title">API Docs</div>
+    
+    <div class="upload-section">
+        <label for="json-upload" class="upload-btn">Cargar nuevo JSON</label>
+        <input type="file" id="json-upload" accept=".json">
+    </div>
+
+    <input id="search" class="search" placeholder="Buscar endpoint...">
+    <div id="nav"></div>
+</div>
+
+<div class="main">
+    <div class="api-header">
+        <h1 id="title">Cargando...</h1>
+        <p id="desc"></p>
+    </div>
+    <div id="content"></div>
+</div>
+
+<script>
+// Funciones de utilidad globales
+function resolveRef(ref, definitions) {
+    if (!ref) return null;
+    const parts = ref.split('/');
+    const name = parts[parts.length - 1];
+    return definitions[name];
+}
+
+function generateExample(schema, definitions, depth = 0) {
+    if (depth > 5 || !schema) return null;
+    
+    if (schema.$ref) {
+        return generateExample(resolveRef(schema.$ref, definitions), definitions, depth + 1);
+    }
+    
+    if (schema.example !== undefined) return schema.example;
+    if (schema.default !== undefined) return schema.default;
+
+    if (schema.type === 'object' || schema.properties) {
+        const obj = {};
+        for (const key in schema.properties) {
+            obj[key] = generateExample(schema.properties[key], definitions, depth + 1);
+        }
+        return obj;
+    }
+    
+    if (schema.type === 'array' || schema.items) {
+        return [generateExample(schema.items, definitions, depth + 1)];
+    }
+
+    if (schema.type === 'string') return "string";
+    if (schema.type === 'integer' || schema.type === 'number') return 0;
+    if (schema.type === 'boolean') return true;
+    
+    return null;
+}
+
+function syntaxHighlight(jsonObj) {
+    let json = JSON.stringify(jsonObj, undefined, 2);
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'key';
+                match = match.replace(/"/g, '');
+            } else {
+                cls = 'string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'boolean';
+        } else if (/null/.test(match)) {
+            cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
+// Función principal que construye toda la UI a partir del objeto JSON
+function renderDocumentation(spec) {
+    const nav = document.getElementById("nav");
+    const content = document.getElementById("content");
+    
+    // Limpiar contenido previo (vital para cuando subimos un JSON nuevo)
+    nav.innerHTML = '';
+    content.innerHTML = '';
+
+    document.getElementById("title").innerText = spec.info?.title || "API Docs";
+    document.getElementById("sidebar-title").innerText = spec.info?.title || "API Docs";
+    document.getElementById("desc").innerText = spec.info?.description || "";
+
+    const definitions = spec.definitions || {};
+    const scheme = (spec.schemes && spec.schemes.length > 0) ? spec.schemes[0] : 'https';
+    const host = spec.host || 'sandbox.epagos.com';
+    const basePath = (spec.basePath || '').replace(/\/$/, '');
+    const baseUrl = `${scheme}://${host}${basePath}`;
+
+    let endpoints = [];
+
+    // Procesar paths
+    Object.entries(spec.paths || {}).forEach(([path, methods]) => {
+        const pathParams = methods.parameters || [];
+        Object.entries(methods).forEach(([method, details]) => {
+            if(method === "parameters") return;
+            
+            endpoints.push({
+                id: method + "-" + path.replace(/[\/\s]/g, '-').replace(/[{}]/g, ''),
+                path,
+                method,
+                details: details || {},
+                params: [...(details.parameters || []), ...pathParams],
+                tag: (details.tags && details.tags.length > 0) ? details.tags[0] : "General"
+            });
+        });
+    });
+
+    // Crear Navegación
+    const tags = [...new Set(endpoints.map(e => e.tag))];
+    tags.forEach(tag => {
+        const tagDiv = document.createElement("div");
+        tagDiv.className = "nav-tag";
+        tagDiv.innerText = tag || "ENDPOINTS";
+        nav.appendChild(tagDiv);
+
+        endpoints.filter(e => e.tag === tag).forEach(e => {
+            const a = document.createElement("a");
+            a.href = "#" + e.id;
+            a.className = "endpoint-link search-item";
+            a.setAttribute("data-search", `${e.method} ${e.path} ${e.details.summary || ''}`.toLowerCase());
+            a.innerHTML = `<span class="link-method ${e.method}">${e.method}</span> <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.path}</span>`;
+            nav.appendChild(a);
+        });
+    });
+
+    // Crear Bloques de Contenido
+    endpoints.forEach(e => {
+        const div = document.createElement("div");
+        div.className = "endpoint-block";
+        div.id = e.id;
+
+        const queryParams = e.params.filter(p => p.in === 'query' || p.in === 'path');
+        const bodyParams = e.params.filter(p => p.in === 'body');
+
+        // Construcción del cURL
+        let queryString = "";
+        const queries = e.params.filter(p => p.in === 'query');
+        if (queries.length > 0) {
+            queryString = "?" + queries.map(p => {
+                let val = 'string';
+                if(p.type === 'integer' || p.type === 'number') val = '123';
+                if(p.type === 'boolean') val = 'true';
+                return `${p.name}=${val}`;
+            }).join('&');
+        }
+
+        const fullUrl = baseUrl + e.path + queryString;
+        let curlCmd = `curl --request ${e.method.toUpperCase()} '${fullUrl}' \\\n --header "X-API-Key: $API_KEY"`;
+
+        let paramsHTML = "";
+        if (queryParams.length > 0) {
+            paramsHTML += `<h4>Query & Path Parameters</h4><table>
+                <thead><tr><th>Name</th><th>Description</th></tr></thead><tbody>`;
+            queryParams.forEach(p => {
+                paramsHTML += `<tr>
+                    <td>
+                        <span class="param-name">${p.name} ${p.required ? '<span class="param-req">Required</span>' : ''}</span>
+                        <span class="param-type">${p.type || 'string'}</span>
+                    </td>
+                    <td><div class="param-desc">${p.description || '-'}</div></td>
+                </tr>`;
+            });
+            paramsHTML += `</tbody></table>`;
+        }
+
+        let bodyDescHTML = "";
+        let requestExampleHTML = "";
+        
+        if (bodyParams.length > 0) {
+            const bp = bodyParams[0];
+            bodyDescHTML += `<h4>Body Parameter</h4><table>
+                <thead><tr><th>Name</th><th>Description</th></tr></thead><tbody>
+                <tr>
+                    <td>
+                        <span class="param-name">${bp.name} ${bp.required ? '<span class="param-req">Required</span>' : ''}</span>
+                        <span class="param-type">object</span>
+                    </td>
+                    <td><div class="param-desc">${bp.description || 'Request payload'}</div></td>
+                </tr>
+                </tbody></table>`;
+            
+            const exampleJson = generateExample(bp.schema, definitions);
+            if(exampleJson) {
+                curlCmd += ` \\\n --header "Content-Type: application/json" \\\n --data '${JSON.stringify(exampleJson)}'`;
+
+                requestExampleHTML = `
+                    <div class="code-section-title">Example Request Body</div>
+                    <div class="code-block-container">
+                        <pre>${syntaxHighlight(exampleJson)}</pre>
+                    </div>`;
+            }
+        }
+
+        let curlHTML = `
+            <div class="code-section-title">cURL</div>
+            <div class="code-block-container">
+                <pre class="curl-cmd">${curlCmd}</pre>
+            </div>
+        `;
+
+        // Respuestas
+        let responsesDescHTML = "<h4>Responses</h4><table><thead><tr><th>Code</th><th>Description</th></tr></thead><tbody>";
+        let responsesExampleHTML = "";
+
+        if(e.details.responses) {
+            Object.entries(e.details.responses).forEach(([code, res]) => {
+                responsesDescHTML += `<tr>
+                    <td><span class="param-name">${code}</span></td>
+                    <td><div class="param-desc">${res.description || ''}</div></td>
+                </tr>`;
+
+                let resExample = null;
+                if(res.examples && res.examples["application/json"]) {
+                    resExample = res.examples["application/json"];
+                } else if(res.schema) {
+                    resExample = generateExample(res.schema, definitions);
+                }
+
+                if(resExample) {
+                    let statusClass = "status-200";
+                    if(code.startsWith("4") || code.startsWith("5")) statusClass = "status-" + code;
+
+                    responsesExampleHTML += `
+                        <div class="code-section-title">Response <span class="status-badge ${statusClass}">${code}</span></div>
+                        <div class="code-block-container">
+                            <pre>${syntaxHighlight(resExample)}</pre>
+                        </div>
+                    `;
+                }
+            });
+        }
+        responsesDescHTML += "</tbody></table>";
+
+        div.innerHTML = `
+            <div class="endpoint-info">
+                <h2 class="endpoint-title">${e.details.summary || e.path}</h2>
+                <div class="url-bar">
+                    <span class="badge ${e.method}">${e.method}</span>
+                    <span class="path">${e.path}</span>
+                </div>
+                <div class="endpoint-desc">${e.details.description || ''}</div>
+                ${paramsHTML}
+                ${bodyDescHTML}
+                ${responsesDescHTML}
+            </div>
+            <div class="endpoint-code">
+                ${curlHTML}
+                ${requestExampleHTML}
+                ${responsesExampleHTML}
+            </div>
+        `;
+        content.appendChild(div);
+    });
+}
+
+// 1. Cargar el JSON por defecto al inicio
+fetch('./epagos-app-2.0.0-pd1307-update.json')
+    .then(r => r.json())
+    .then(spec => renderDocumentation(spec))
+    .catch(err => {
+        document.getElementById("content").innerHTML = `<div style="padding:40px; color:red;">No se pudo cargar el archivo local: ${err.message}. Podes subir uno manualmente.</div>`;
+    });
+
+// 2. Manejar la subida de un nuevo archivo JSON
+document.getElementById('json-upload').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const uploadedSpec = JSON.parse(e.target.result);
+            renderDocumentation(uploadedSpec); // Volver a renderizar todo
+            // Reseteamos el input por si quiere volver a subir el mismo archivo modificado
+            event.target.value = ''; 
+        } catch (error) {
+            alert('Error al procesar el archivo JSON: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+});
+
+// Funcionalidad de Búsqueda
+document.getElementById("search").addEventListener("input", ev => {
+    const q = ev.target.value.toLowerCase();
+    document.querySelectorAll(".search-item").forEach(el => {
+        const match = el.getAttribute("data-search").includes(q);
+        el.style.display = match ? "flex" : "none";
+    });
+});
+</script>
+</body>
+</html>
