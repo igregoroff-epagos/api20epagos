@@ -114,6 +114,7 @@
         flex: 1;
         padding: 40px;
         max-width: 800px;
+        position: relative;
     }
 
     .endpoint-code {
@@ -125,7 +126,34 @@
         border-left: 1px solid #0f172a;
     }
 
-    .endpoint-title { font-size: 20px; color: #0f172a; margin-top: 0; margin-bottom: 12px; }
+    .endpoint-title-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .endpoint-title { font-size: 20px; color: #0f172a; margin: 0; }
+    
+    /* Botón de IA */
+    .ai-btn {
+        background: #10a37f; /* Color estilo ChatGPT */
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s;
+    }
+    .ai-btn:hover {
+        background: #0d8a6a;
+    }
+
     .endpoint-desc { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
     
     .url-bar {
@@ -210,7 +238,6 @@
 </div>
 
 <script>
-// Funciones de utilidad globales
 function resolveRef(ref, definitions) {
     if (!ref) return null;
     const parts = ref.split('/');
@@ -268,12 +295,16 @@ function syntaxHighlight(jsonObj) {
     });
 }
 
-// Función principal que construye toda la UI a partir del objeto JSON
+// Función que abre directamente ChatGPT con el prompt pre-cargado
+function askChatGPT(prompt) {
+    const url = 'https://chatgpt.com/?q=' + encodeURIComponent(prompt);
+    window.open(url, '_blank');
+}
+
 function renderDocumentation(spec) {
     const nav = document.getElementById("nav");
     const content = document.getElementById("content");
     
-    // Limpiar contenido previo (vital para cuando subimos un JSON nuevo)
     nav.innerHTML = '';
     content.innerHTML = '';
 
@@ -289,7 +320,6 @@ function renderDocumentation(spec) {
 
     let endpoints = [];
 
-    // Procesar paths
     Object.entries(spec.paths || {}).forEach(([path, methods]) => {
         const pathParams = methods.parameters || [];
         Object.entries(methods).forEach(([method, details]) => {
@@ -306,7 +336,6 @@ function renderDocumentation(spec) {
         });
     });
 
-    // Crear Navegación
     const tags = [...new Set(endpoints.map(e => e.tag))];
     tags.forEach(tag => {
         const tagDiv = document.createElement("div");
@@ -324,7 +353,6 @@ function renderDocumentation(spec) {
         });
     });
 
-    // Crear Bloques de Contenido
     endpoints.forEach(e => {
         const div = document.createElement("div");
         div.className = "endpoint-block";
@@ -333,7 +361,6 @@ function renderDocumentation(spec) {
         const queryParams = e.params.filter(p => p.in === 'query' || p.in === 'path');
         const bodyParams = e.params.filter(p => p.in === 'body');
 
-        // Construcción del cURL
         let queryString = "";
         const queries = e.params.filter(p => p.in === 'query');
         if (queries.length > 0) {
@@ -366,6 +393,7 @@ function renderDocumentation(spec) {
 
         let bodyDescHTML = "";
         let requestExampleHTML = "";
+        let exampleJson = null;
         
         if (bodyParams.length > 0) {
             const bp = bodyParams[0];
@@ -380,7 +408,7 @@ function renderDocumentation(spec) {
                 </tr>
                 </tbody></table>`;
             
-            const exampleJson = generateExample(bp.schema, definitions);
+            exampleJson = generateExample(bp.schema, definitions);
             if(exampleJson) {
                 curlCmd += ` \\\n --header "Content-Type: application/json" \\\n --data '${JSON.stringify(exampleJson)}'`;
 
@@ -399,7 +427,6 @@ function renderDocumentation(spec) {
             </div>
         `;
 
-        // Respuestas
         let responsesDescHTML = "<h4>Responses</h4><table><thead><tr><th>Code</th><th>Description</th></tr></thead><tbody>";
         let responsesExampleHTML = "";
 
@@ -432,9 +459,29 @@ function renderDocumentation(spec) {
         }
         responsesDescHTML += "</tbody></table>";
 
+        // Generación del prompt para la IA
+        const aiPrompt = `Actúa como un desarrollador experto. Estoy trabajando con la API de E-Pagos y necesito entender cómo conectarme a este endpoint en particular:
+
+ENDPOINT: ${e.method.toUpperCase()} ${e.path}
+OBJETIVO: ${e.details.summary || 'Sin descripción'}
+
+PARÁMETROS EN LA URL:
+${queryParams.length > 0 ? JSON.stringify(queryParams.map(p => ({ nombre: p.name, tipo: p.type, requerido: p.required })), null, 2) : 'Ninguno'}
+
+BODY ESPERADO (JSON):
+${exampleJson ? JSON.stringify(exampleJson, null, 2) : 'No lleva body.'}
+
+Por favor, explicame qué significa cada campo y dame un ejemplo de código en JavaScript (fetch) y PHP (cURL) para hacer esta petición.`;
+
         div.innerHTML = `
             <div class="endpoint-info">
-                <h2 class="endpoint-title">${e.details.summary || e.path}</h2>
+                <div class="endpoint-title-container">
+                    <h2 class="endpoint-title">${e.details.summary || e.path}</h2>
+                    <button class="ai-btn" onclick='askChatGPT(${JSON.stringify(aiPrompt)})'>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Preguntar en ChatGPT
+                    </button>
+                </div>
                 <div class="url-bar">
                     <span class="badge ${e.method}">${e.method}</span>
                     <span class="path">${e.path}</span>
@@ -454,7 +501,6 @@ function renderDocumentation(spec) {
     });
 }
 
-// 1. Cargar el JSON por defecto al inicio
 fetch('./epagos-app-2.0.0-pd1307-update.json')
     .then(r => r.json())
     .then(spec => renderDocumentation(spec))
@@ -462,7 +508,6 @@ fetch('./epagos-app-2.0.0-pd1307-update.json')
         document.getElementById("content").innerHTML = `<div style="padding:40px; color:red;">No se pudo cargar el archivo local: ${err.message}. Podes subir uno manualmente.</div>`;
     });
 
-// 2. Manejar la subida de un nuevo archivo JSON
 document.getElementById('json-upload').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -471,8 +516,7 @@ document.getElementById('json-upload').addEventListener('change', function(event
     reader.onload = function(e) {
         try {
             const uploadedSpec = JSON.parse(e.target.result);
-            renderDocumentation(uploadedSpec); // Volver a renderizar todo
-            // Reseteamos el input por si quiere volver a subir el mismo archivo modificado
+            renderDocumentation(uploadedSpec);
             event.target.value = ''; 
         } catch (error) {
             alert('Error al procesar el archivo JSON: ' + error.message);
@@ -481,7 +525,6 @@ document.getElementById('json-upload').addEventListener('change', function(event
     reader.readAsText(file);
 });
 
-// Funcionalidad de Búsqueda
 document.getElementById("search").addEventListener("input", ev => {
     const q = ev.target.value.toLowerCase();
     document.querySelectorAll(".search-item").forEach(el => {
