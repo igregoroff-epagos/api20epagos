@@ -135,9 +135,9 @@
 
     .endpoint-title { font-size: 20px; color: #0f172a; margin: 0; }
     
-    /* Botón de IA */
+    /* Botón IA */
     .ai-btn {
-        background: #10a37f; /* Color estilo ChatGPT */
+        background: #10a37f;
         color: white;
         border: none;
         padding: 6px 12px;
@@ -376,10 +376,12 @@ function renderDocumentation(spec) {
         let curlCmd = `curl --request ${e.method.toUpperCase()} '${fullUrl}' \\\n --header "X-API-Key: $API_KEY"`;
 
         let paramsHTML = "";
+        let paramNames = [];
         if (queryParams.length > 0) {
             paramsHTML += `<h4>Query & Path Parameters</h4><table>
                 <thead><tr><th>Name</th><th>Description</th></tr></thead><tbody>`;
             queryParams.forEach(p => {
+                paramNames.push(p.name);
                 paramsHTML += `<tr>
                     <td>
                         <span class="param-name">${p.name} ${p.required ? '<span class="param-req">Required</span>' : ''}</span>
@@ -459,19 +461,17 @@ function renderDocumentation(spec) {
         }
         responsesDescHTML += "</tbody></table>";
 
-        // Generación del prompt para la IA
-        const aiPrompt = `Actúa como un desarrollador experto. Estoy trabajando con la API de E-Pagos y necesito entender cómo conectarme a este endpoint en particular:
-
-ENDPOINT: ${e.method.toUpperCase()} ${e.path}
-OBJETIVO: ${e.details.summary || 'Sin descripción'}
-
-PARÁMETROS EN LA URL:
-${queryParams.length > 0 ? JSON.stringify(queryParams.map(p => ({ nombre: p.name, tipo: p.type, requerido: p.required })), null, 2) : 'Ninguno'}
-
-BODY ESPERADO (JSON):
-${exampleJson ? JSON.stringify(exampleJson, null, 2) : 'No lleva body.'}
-
-Por favor, explicame qué significa cada campo y dame un ejemplo de código en JavaScript (fetch) y PHP (cURL) para hacer esta petición.`;
+        // URL actual anclada al ID del endpoint
+        const currentEndpointUrl = window.location.href.split('#')[0] + '#' + e.id;
+        
+        // Construimos el prompt usando la frase solicitada, sumando los detalles técnicos para evitar fallos de lectura.
+        const aiPrompt = `Hola, lee esta documentación de la API ${currentEndpointUrl}, y prepárate para responder preguntas sobre ella.
+        
+Para asegurarme de que tengas el contexto en caso de que no puedas leer JS dinámico, estos son los datos técnicos de este endpoint:
+- Endpoint: ${e.method.toUpperCase()} ${e.path}
+- Resumen: ${e.details.summary || 'Sin descripción'}
+- Parámetros: ${paramNames.length > 0 ? paramNames.join(', ') : 'Ninguno'}
+- Estructura del Body: ${exampleJson ? JSON.stringify(exampleJson) : 'No lleva body'}`;
 
         div.innerHTML = `
             <div class="endpoint-info">
